@@ -53,9 +53,9 @@ contract Loan is MetaCoin {
     function reqLoan(uint256 principle, uint rate, uint time) public returns(bool correct) {
         uint256 toPay = getCompoundInterest(principle, rate, time);
         // A creditor uses this function to request the Owner to settle his loan, and the amount to settle is calculated using the inputs.
-        loans[msg.sender] = toPay;
         if (toPay<principle || rate < 1) return false;
         else{
+	loans[msg.sender] = toPay;
         emit Request(msg.sender,principle,rate,time,toPay);
         return true;
         }
