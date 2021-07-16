@@ -20,13 +20,20 @@ contract Ballot {
     event Registered(string voter);
     event Voted(string votername);
     address private chairperson;
+    uint256 private startVoteTime; // 
+    uint256 private startRegistering; // 
+    uint256 private votingDuration; // how long does the voting continues in hours
+    uint256 private registeringDuration; // how long does the registration continues in hours
     mapping(address => Voter) public voters;
     mapping(string => uint) public contestantIndex;
     address[] public votersAddress;
     Contestant[] public contestants;
     
-    constructor() public {
+    constructor(uint256 regduration,uint256 voteduration) public {
         chairperson = msg.sender;
+        startRegistering = block.timestamp;
+        registeringDuration = regduration;
+        votingDuration = voteduration;
         }
         
     modifier ischairperson() {
@@ -37,7 +44,9 @@ contract Ballot {
     
     
     //voters can register themself just passing their name and a true/false if they want to stand in election as contestant
+    
     function register(string memory votername,bool ascontestant) public {
+        require(block.timestamp<= startRegistering + 3600*registeringDuration,"Sorry the time to register is over");
         if (ascontestant) { 
             contestants.push(Contestant({
             name: votername,
@@ -77,10 +86,14 @@ contract Ballot {
         return contestantIndex[name];
     }
     
+    function StartVoting() public ischairperson {
+        startVoteTime=block.timestamp;
+    }
     
     //main process to vote by entering contestant's name and their respective index
     function Vote(string memory NameToVote,uint proposalIndex) public {
         Voter memory sender = voters[msg.sender];
+        require(block.timestamp<=startVoteTime + 3600*votingDuration,"sorry you're late voting time has ended");
         require(!sender.voted ,"The voter has already voted");
         require(sender.verified, "The Voter is not verified");
         require(contestants[proposalIndex].verified,"The Contestant is not verified");
@@ -94,7 +107,7 @@ contract Ballot {
     
     
     //this function compares the total votes to each contestant to give the winner name 
-    function WinnerName() public view returns(string memory){
+    function WinnerName() public ischairperson view returns(string memory){
         uint maxVotes=0;
         string memory winner;
         for (uint i=0;i<contestants.length;i++){
